@@ -1,6 +1,8 @@
 # Uncomment this to pass the first stage
 import socket
 from concurrent.futures import ThreadPoolExecutor
+import signal
+import sys
 
 def reply(c):
     while True:
@@ -8,6 +10,13 @@ def reply(c):
             break
         c.send(bytes("+PONG\r\n", 'utf-8'))
     print("Client disconnected")
+
+#def sigint(signum, frame):
+#    print(f'handlerが呼び出されました(signum={signum})')
+#    sys.exit(0)
+
+#signal.signal(signal.SIGINT, sigint)
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
