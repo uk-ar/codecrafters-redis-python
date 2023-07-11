@@ -1,6 +1,13 @@
 # Uncomment this to pass the first stage
 import socket
+from concurrent.futures import ThreadPoolExecutor
 
+def reply(c):
+    while True:
+        if not c.recv(1024):
+            break
+        c.send(bytes("+PONG\r\n", 'utf-8'))
+    print("Client disconnected")
 
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -9,10 +16,10 @@ def main():
     # Uncomment this to pass the first stage
     #
     server_socket = socket.create_server(("localhost", 6379), reuse_port=True)
-    c,_ = server_socket.accept() # wait for client
+    tpe = ThreadPoolExecutor(max_workers=3)
     while True:
-        c.recv(1024)
-        c.send(bytes("+PONG\r\n", 'utf-8'))
+        c,_ = server_socket.accept() # wait for client
+        tpe.submit(reply,c)
 
 if __name__ == "__main__":
     main()
