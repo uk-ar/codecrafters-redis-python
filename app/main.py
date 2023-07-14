@@ -4,11 +4,23 @@ from concurrent.futures import ThreadPoolExecutor
 import signal
 import sys
 
+import app.reply
+#import parse
+
+#print(app.reply.parse(b"+PING\r\n"))
+
 def reply(c):
     while True:
-        if not c.recv(1024):
+        payload = c.recv(1024)
+        if not payload:
             break
-        c.send(bytes("+PONG\r\n", 'utf-8'))
+        l = app.reply.parse(payload)
+        print(l)
+        l[0]=l[0].upper()
+        if l[0]==b'PING':
+            c.send(b"+PONG\r\n")
+        elif l[0]==b'ECHO':
+            c.send(app.reply.bulk_string(l[1]))
     print("Client disconnected")
 
 #def sigint(signum, frame):
