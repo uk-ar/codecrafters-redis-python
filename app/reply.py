@@ -26,22 +26,19 @@ store = {}
 
 def reply(payload: bytes):
     l = parse(payload)
-    print(l)
-    l[0] = l[0].upper()
-    if l[0] == b'PING':
+    command = l[0].upper()
+    if command == b'PING':
         return b"+PONG\r\n"
-    elif l[0] == b'ECHO':
+    elif command == b'ECHO':
         return bulk_string(l[1])
-    elif l[0] == b'SET':
-        print("SET", store, l)
+    elif command == b'SET':
         store[l[1]] = {b"value": l[2]}
         if len(l) > 3 and l[3].upper() == b'PX':
             store[l[1]][b"expire"] = datetime.now() + timedelta(milliseconds=int(l[4]))
         else:
             store[l[1]][b"expire"] = datetime.max
         return b"+OK\r\n"
-    elif l[0] == b'GET':
-        print("GET", store[l[1]])
+    elif command == b'GET':
         if (not l[1] in store) or (datetime.now() > store[l[1]][b"expire"]):
             return b"$-1\r\n"
         else:
