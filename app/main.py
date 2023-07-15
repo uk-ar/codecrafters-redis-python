@@ -2,34 +2,21 @@
 import socket
 from concurrent.futures import ThreadPoolExecutor
 import signal
-import sys
 
 import app.reply
 #import parse
 
 #print(app.reply.parse(b"+PING\r\n"))
 
-store = {}
-def reply(c):
+def handle(c):
     while True:
         payload = c.recv(1024)
         if not payload:
             break
-        l = app.reply.parse(payload)
-        print(l)
-        l[0] = l[0].upper()
-        if l[0] == b'PING':
-            c.send(b"+PONG\r\n")
-        elif l[0] == b'ECHO':
-            c.send(app.reply.bulk_string(l[1]))
-        elif l[0] == b'SET':
-            store[l[1]]=l[2]
-            c.send(b"+OK\r\n")
-        elif l[0] == b'GET':
-            if not l[1] in store:
-                c.send(b"$-1\r\n")
-            else:                
-                c.send(app.reply.bulk_string(store[l[1]]))
+        print(payload)
+        resp = app.reply.reply(payload)
+        print(resp)
+        c.send(resp)
     print("Client disconnected")
 
 
@@ -51,7 +38,7 @@ def main():
     tpe = ThreadPoolExecutor(max_workers=3)
     while True:
         c, _ = server_socket.accept()  # wait for client
-        tpe.submit(reply, c)
+        tpe.submit(handle, c)
 
 
 if __name__ == "__main__":
