@@ -6,7 +6,6 @@ import select
 import app.reply
 
 def handle(c):
-    #while True:
     payload = c.recv(1024)
     if not payload:
         print("Client disconnected")
@@ -16,13 +15,7 @@ def handle(c):
     #print(resp)
     c.send(resp)
 
-
 signal.signal(signal.SIGINT, signal.SIG_DFL)
-
-
-def main():
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
-    print("Logs from your program will appear here!")
 
 class RedisServer:
 
