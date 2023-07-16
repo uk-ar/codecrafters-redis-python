@@ -36,6 +36,23 @@ class RedisServer:
                 else:
                     handle(ready)
 
+    def listen_epoll(self):
+        epoll = select.epoll()
+        # select.EPOLLIN: ready to read
+        # select.EPOLLET: edge triggered
+        epoll.register(self.server, select.EPOLLIN | select.EPOLLET)
+        clients = {}
+        while True:
+            events = epoll.poll()
+            for fd,event in events:
+                if fd == self.server.fileno():
+                    con, addr = self.server.accept()
+                    print("New connection from", addr)
+                    epoll.register(con, select.EPOLLIN | select.EPOLLET)
+                    clients[con.fileno()]=con
+                elif event & select.POLLIN:
+                    handle(clients[fd])
+
 if __name__ == "__main__":
     s = RedisServer()
-    s.listen()
+    s.listen_epoll()
