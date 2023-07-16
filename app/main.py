@@ -9,11 +9,12 @@ def handle(c):
     payload = c.recv(1024)
     if not payload:
         print("Client disconnected")
-        return
+        return False
     #print(payload)
     resp = app.reply.reply(payload)
     #print(resp)
     c.send(resp)
+    return True
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -38,20 +39,34 @@ class RedisServer:
 
     def listen_epoll(self):
         epoll = select.epoll()
+        self.server.setblocking(False)
         # select.EPOLLIN: ready to read
         # select.EPOLLET: edge triggered
         epoll.register(self.server, select.EPOLLIN | select.EPOLLET)
         clients = {}
-        while True:
-            events = epoll.poll()
-            for fd,event in events:
-                if fd == self.server.fileno():
-                    con, addr = self.server.accept()
-                    print("New connection from", addr)
-                    epoll.register(con, select.EPOLLIN | select.EPOLLET)
-                    clients[con.fileno()]=con
-                elif event & select.POLLIN:
-                    handle(clients[fd])
+        try:
+            while True:
+                events = epoll.poll()
+                for fd,event in events:
+                    if fd == self.server.fileno():
+                        con, addr = self.server.accept()
+                        print("New connection from", addr)
+                        con.setblocking(False)
+                        epoll.register(con, select.EPOLLIN | select.EPOLLET)
+                        clients[con.fileno()]=con
+                    elif event & select.POLLIN:
+                        if not handle(clients[fd]):
+                            epoll.unregister(fd)
+                            clients[fd].close()
+                            del clients[fd]
+        finally:
+            for _,con in clients:
+                epoll.unregister(con)
+                con.close()
+            epoll.unregister(self.server)
+            epoll.close()
+            self.server.close()
+            # TODO close all clients?
 
 if __name__ == "__main__":
     s = RedisServer()
