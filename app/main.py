@@ -2,8 +2,9 @@ import socket
 from concurrent.futures import ThreadPoolExecutor
 import signal
 import select
-
-import app.reply
+import sys
+sys.path.append("../")
+from app.reply import reply,config
 
 def handle(c):
     payload = c.recv(1024)
@@ -11,7 +12,7 @@ def handle(c):
         print("Client disconnected")
         return False
     #print(payload)
-    resp = app.reply.reply(payload)
+    resp = reply(payload)
     #print(resp)
     c.send(resp)
     return True
