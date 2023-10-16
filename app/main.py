@@ -2,9 +2,12 @@ import socket
 from concurrent.futures import ThreadPoolExecutor
 import signal
 import select
+import subprocess
 import sys
+import os
+from struct import pack, unpack, calcsize, iter_unpack
 sys.path.append("../")
-from app.reply import reply,config
+from app.reply import reply,config,store
 
 def handle(c):
     payload = c.recv(1024)
@@ -69,6 +72,38 @@ class RedisServer:
             self.server.close()
             # TODO close all clients?
 
+def read_obj(f) -> int:
+    byte = int.from_bytes(f.read(1),byteorder="little")
+    if (byte >> 6) == 0b00:
+        #return byte
+        return f.read(byte & 0x3f)
+    elif (byte >> 6) == 0b11:
+        shift = byte & 0x3f
+        if shift == 3:
+            return "not supported(compressed)"
+        return int.from_bytes(f.read(1 << shift),byteorder="little")
+
+def read_aux(f) -> dict[str,str]:
+    key = read_obj(f)   
+    value = read_obj(f)
+    return {key:value}
+
 if __name__ == "__main__":
+    if len(sys.argv) == 5:
+        path = sys.argv[2]+"/"+sys.argv[4]
+        #res = subprocess.run(["cp", sys.argv[2]+"/"+sys.argv[4], f"/home/yuuki.linux/codecrafters-redis-python/{sys.argv[4]}"], stdout=subprocess.PIPE)
+        #sys.stdout.buffer.write(res.stdout)
+        if os.path.exists(path):
+            with open(path,"rb") as f:
+                magic,version = unpack("5s4s",f.read(9))
+                print(magic,version)
+                op = unpack("c",f.read(1))
+                print(read_aux(f))
+                op = unpack("c",f.read(1))
+                print(read_aux(f))                
+                #while op != 0xff:
+
+                exit(0)
+    #store[b"foo"] = "bar"
     s = RedisServer()
     s.listen_epoll()
