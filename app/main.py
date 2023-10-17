@@ -72,6 +72,12 @@ class RedisServer:
             self.server.close()
             # TODO close all clients?
 
+def length(f) -> int:
+    byte = int.from_bytes(f.read(1),byteorder="little")
+    if (byte >> 6) == 0b00:
+        return byte & 0x3f
+    #elif (byte >> 6) == 0b01:   
+
 def read_obj(f) -> int:
     byte = int.from_bytes(f.read(1),byteorder="little")
     if (byte >> 6) == 0b00:
@@ -83,7 +89,7 @@ def read_obj(f) -> int:
             return "not supported(compressed)"
         return int.from_bytes(f.read(1 << shift),byteorder="little")
 
-def read_aux(f) -> dict[str,str]:
+def read_kv(f) -> dict[str,str]:
     key = read_obj(f)   
     value = read_obj(f)
     return {key:value}
@@ -95,15 +101,26 @@ if __name__ == "__main__":
         #sys.stdout.buffer.write(res.stdout)
         if os.path.exists(path):
             with open(path,"rb") as f:
-                magic,version = unpack("5s4s",f.read(9))
-                print(magic,version)
-                op = unpack("c",f.read(1))
-                print(read_aux(f))
-                op = unpack("c",f.read(1))
-                print(read_aux(f))                
+                magic, version = unpack("5s4s", f.read(9))
+                print(magic, version)
+                op = unpack("c", f.read(1)) # fa
+                print(op, read_kv(f))
+                op = unpack("c", f.read(1)) # fa
+                print(op, read_kv(f))
+                op = unpack("c", f.read(1)) # fe
+                print(op, length(f)) # select db
+                op = unpack("c", f.read(1)) # fb
+                print(op, length(f), length(f)) # resize db
+                # fd
+                # fc
+                value_type = unpack("c",f.read(1)) # type
+                kv = read_kv(f)
+                print(value_type, kv)
+                store |= kv
+                op = unpack("c", f.read(1)) # ff
+                checksum = byte = int.from_bytes(f.read(8),byteorder="little")
                 #while op != 0xff:
-
-                exit(0)
+                #exit(0)
     #store[b"foo"] = "bar"
     s = RedisServer()
     s.listen_epoll()
