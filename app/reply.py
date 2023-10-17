@@ -35,6 +35,9 @@ def array(l: list[str]):
 store = {}
 config = {}
 
+def command_set(key,value,time=datetime.max):
+    store[key] = {"value" : value, "expire" : time}
+
 def reply(payload: bytes):
     l = parse(payload)
     command = l[0].upper()
@@ -43,11 +46,10 @@ def reply(payload: bytes):
     elif command == b'ECHO':
         return bulk_string(l[1])
     elif command == b'SET':
-        store[l[1]] = {"value": l[2]}
         if len(l) > 3 and l[3].upper() == b'PX':
-            store[l[1]]["expire"] = datetime.now() + timedelta(milliseconds=int(l[4]))
+            command_set(l[1],l[2],datetime.now() + timedelta(milliseconds=int(l[4])))
         else:
-            store[l[1]]["expire"] = datetime.max
+            command_set(l[1],l[2])
         return simple_string("OK")
     elif command == b'GET':
         if (not l[1] in store) or (datetime.now() > store[l[1]]["expire"]):

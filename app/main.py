@@ -7,7 +7,7 @@ import sys
 import os
 from struct import pack, unpack, calcsize, iter_unpack
 sys.path.append("../")
-from app.reply import reply,config,store
+from app.reply import reply, config, store, command_set
 
 def handle(c):
     payload = c.recv(1024)
@@ -116,7 +116,10 @@ if __name__ == "__main__":
                 value_type = unpack("c",f.read(1)) # type
                 kv = read_kv(f)
                 print(value_type, kv)
-                store |= kv
+                for k,v in kv.items():
+                    command_set(k,v)
+                    #store[k] = {"value":v}
+                #store |= kv
                 op = unpack("c", f.read(1)) # ff
                 checksum = byte = int.from_bytes(f.read(8),byteorder="little")
                 #while op != 0xff:
