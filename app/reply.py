@@ -64,7 +64,8 @@ def reply(payload: bytes):
         if l[1].upper() == b'GET' and l[2] == b'dbfilename':
             return array([bulk_string(b"dbfilename"),bulk_string(sys.argv[4].encode())])
     elif command == b'KEYS':
-        return array([bulk_string(x) for x in [list(store.keys())[0]]])
+        #print(list(store.keys()))
+        return array([bulk_string(x) for x in list(store.keys())])
     else:
         return simple_string(f"UNKNOW COMMAND {l}")
 

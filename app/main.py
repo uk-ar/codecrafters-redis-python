@@ -92,7 +92,7 @@ def read_obj(f) -> int:
 def read_kv(f) -> dict[str,str]:
     key = read_obj(f)   
     value = read_obj(f)
-    return {key:value}
+    return [key,value]
 
 if __name__ == "__main__":
     if len(sys.argv) == 5:
@@ -113,15 +113,14 @@ if __name__ == "__main__":
                 print(op, length(f), length(f)) # resize db
                 # fd
                 # fc
-                value_type = unpack("c",f.read(1)) # type
-                kv = read_kv(f)
-                print(value_type, kv)
-                for k,v in kv.items():
+                op = int.from_bytes(f.read(1),byteorder="little")
+                while op != 0xff:
+                    k,v = read_kv(f)
+                    print(k,v)
                     command_set(k,v)
-                    #store[k] = {"value":v}
-                #store |= kv
-                op = unpack("c", f.read(1)) # ff
-                checksum = byte = int.from_bytes(f.read(8),byteorder="little")
+                    op = int.from_bytes(f.read(1),byteorder="little")
+                    print(op)
+                checksum = int.from_bytes(f.read(8),byteorder="little")
                 #while op != 0xff:
                 #exit(0)
     #store[b"foo"] = "bar"
